@@ -911,7 +911,15 @@ def compute_mesh_mesh_block_offsets_scan(
     # Step 2: inclusive scan to get total in last element (capture-safe:
     # wp.utils.array_scan allocates temp memory per call, which a
     # conditional CUDA-graph body cannot contain)
-    capture_safe_scan_int32(block_counts, weight_prefix_sums, inclusive=True, device=device, record_tape=record_tape)
+    capture_safe_scan_int32(
+        block_counts,
+        weight_prefix_sums,
+        inclusive=True,
+        device=device,
+        record_tape=record_tape,
+        count=shape_pairs_mesh_mesh_count,
+        count_extra=1,
+    )
     # Step 3: compute per-pair block counts using adaptive threshold
     wp.launch(
         kernel=compute_block_counts_from_weights,
@@ -929,7 +937,15 @@ def compute_mesh_mesh_block_offsets_scan(
     )
     # Step 4: exclusive scan of block counts → block_offsets (in-place,
     # capture-safe)
-    capture_safe_scan_int32(block_offsets, block_offsets, inclusive=False, device=device, record_tape=record_tape)
+    capture_safe_scan_int32(
+        block_offsets,
+        block_offsets,
+        inclusive=False,
+        device=device,
+        record_tape=record_tape,
+        count=shape_pairs_mesh_mesh_count,
+        count_extra=1,
+    )
 
 
 def create_narrow_phase_process_mesh_mesh_contacts_kernel(
